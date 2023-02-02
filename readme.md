@@ -5,14 +5,16 @@
 ## 使用
 
 1. 运行服务
-   > go run ./src/main.go
-2. 上传图片
+   > `./bin/build run`
+1. 上传图片
    > `curl --location --request POST '127.0.0.1:8080/upload' 
    --form 'file=@"/path/to/file.jpg"'` 
-3. 查看
+1. 查看
    > 原图：http://127.0.0.1:8080/images/1.jpg 
    > 设置大小: http://127.0.0.1:8080/images/1.jpg?w=400
-   
+1. 打包
+   > `./bin/build build`
+
 
 ## 更多信息
 
