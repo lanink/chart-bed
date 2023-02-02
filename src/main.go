@@ -2,57 +2,33 @@ package main
 
 import "C"
 import (
-	"fmt"
+	"chart-bed/src/configs"
+	"chart-bed/src/routers"
+	"chart-bed/src/utils"
 	"github.com/gin-gonic/gin"
-	imageflow "github.com/imazen/imageflow-go"
 	"log"
-	"net/http"
-	"strconv"
+	"os"
 )
 
 func main() {
+	config := configs.ReadConfig()
 
-	// w=300&h=300     =>  is ok
-	// dpr mode, scale, anchor, sflip
-	// more params  https://docs.imageflow.io/introduction.html
+	_, exist := os.LookupEnv("APP_CHAR_BED_DEVELOP")
 
-	step := imageflow.NewStep()
+	if exist {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	// for release
-	//gin.SetMode(gin.ReleaseMode)
+	engine := gin.Default()
+	routers.Register(engine)
 
-	r := gin.Default()
+	_, err := utils.CheckAndCreateDir(config.Dir())
 
-	r.POST("/upload", func(c *gin.Context) {
-		file, _ := c.FormFile("file")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-		dist := "./images/" + file.Filename
-		// save file to dist
-		err := c.SaveUploadedFile(file, dist)
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		c.JSON(http.StatusOK, gin.H{"url": fmt.Sprintf("http://%s/images/%s",
-			c.Request.Host, file.Filename),
-			"code": 0})
-	})
-
-	r.GET("/images/:image", func(c *gin.Context) {
-		image := c.Param("image")
-		//width=100&height=100&mode=max&scale=down
-		width, _ := strconv.ParseFloat(c.Query("w"), 64)
-		height, _ := strconv.ParseFloat(c.Query("h"), 64)
-
-		img, _ := step.Decode(imageflow.NewFile("./images/"+image)).
-			ConstrainWithin(width, height).
-			Encode(imageflow.GetBuffer("buf"), imageflow.MozJPEG{}).
-			Execute()
-
-		_, _ = c.Writer.Write(img["buf"])
-	})
-
-	_ = r.Run() // listen and serve on 0.0.0.0:8080
-
+	_ = engine.Run(config.Server())
 }
